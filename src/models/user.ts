@@ -1,4 +1,5 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+
 export interface IUser {
   name: string;
   about: string;
@@ -22,6 +23,6 @@ const userSchema = new mongoose.Schema<IUser>({
     type: String,
     required: true,
   },
-})
+});
 
 export default mongoose.model<IUser>('user', userSchema);

@@ -1,5 +1,5 @@
-import mongoose, { Date, Schema } from "mongoose";
-import user from "./user";
+import mongoose, { Date, Schema } from 'mongoose';
+import user from './user';
 
 interface ICard {
   name: string;
@@ -33,6 +33,6 @@ const cardSchema = new mongoose.Schema<ICard>({
     type: Date,
     default: Date.now,
   },
-})
+});
 
 export default mongoose.model('card', cardSchema);

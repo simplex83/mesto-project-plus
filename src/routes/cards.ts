@@ -1,5 +1,7 @@
-import { Router } from "express";
-import { createCard, getCards, delCardsById, addLikeCard, delLikeCard } from "../controllers/cards";
+import { Router } from 'express';
+import {
+  createCard, getCards, delCardsById, addLikeCard, delLikeCard,
+} from '../controllers/cards';
 
 const router = Router();
 router.post('/', createCard);
