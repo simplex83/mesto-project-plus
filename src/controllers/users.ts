@@ -1,22 +1,50 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/user';
 import { RequestCustom } from '../utils/types';
 import NotFoundError from '../utils/notFoundError ';
 import BadRequestError from '../utils/badRequestError';
+import ConflictError from '../utils/conflictError';
 
 export const createUser = async (req: Request, res: Response, next: NextFunction) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
   try {
-    if (!name || !about || !avatar) {
+    const uniqEmail = await User.findOne({ email });
+    if (uniqEmail) {
+      throw new ConflictError('Пользователь с такими данными уже существует');
+    }
+    if (!email || !password) {
       throw new BadRequestError('Переданы некорректные данные при создании пользователя');
     }
-    const user = await User.create({ name, about, avatar });
+    const hash = await bcrypt.hash(req.body.password, 10);
+    const user = await User.create({
+      name, about, avatar, email, password: hash,
+    });
     return res.status(200).json({ data: user });
   } catch (err) {
     if (err instanceof Error && err.name === 'ValidationError') {
       return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
     }
+    return next(err);
+  }
+};
+
+export const login = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  try {
+    if (!email || !password) {
+      throw new BadRequestError('Почта и пароль обязательны для авторизации');
+    }
+    const user = await User.findUserByCredentials(email, password);
+    const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+    res.cookie('JWT', token, { httpOnly: true, maxAge: 3600000 * 24 * 7 });
+    return res.status(200).json({ message: 'Вы успешно авторизовались' });
+  } catch (err) {
     return next(err);
   }
 };
@@ -81,6 +109,21 @@ export const updateAva = async (req: RequestCustom, res: Response, next: NextFun
   } catch (err) {
     if (err instanceof Error && err.name === 'ValidationError') {
       return next(new BadRequestError('Переданы некорректные данные при обновлении аватара'));
+    }
+    return next(err);
+  }
+};
+
+export const getMe = async (req: RequestCustom, res: Response, next: NextFunction) => {
+  try {
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+      throw new NotFoundError('Пользователь не найден');
+    }
+    return res.status(200).json({ data: user });
+  } catch (err) {
+    if (err instanceof mongoose.Error.CastError) {
+      return next(new BadRequestError('Пользователь не найден'));
     }
     return next(err);
   }

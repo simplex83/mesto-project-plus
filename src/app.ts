@@ -1,10 +1,16 @@
 import express, { NextFunction, Response } from 'express';
 import mongoose from 'mongoose';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { errors } from 'celebrate';
 import { RequestCustom } from './utils/types';
 import userRoute from './routes/users';
 import cardRoute from './routes/cards';
 import errorHandler from './middlewares/errors';
 import NotFoundError from './utils/notFoundError ';
+import { login, createUser } from './controllers/users';
+import auth from './middlewares/auth';
+import logger from './middlewares/logger';
+import { validateCreateUser, validateLogin } from './middlewares/validation';
 
 const { PORT = 3000 } = process.env;
 
@@ -14,21 +20,24 @@ app.use(express.urlencoded({ extended: true }));
 
 // подключение mongoose
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
+// логер запросов
+app.use(logger.requestLogger);
 
-// временное решение авторизации
-app.use((req:RequestCustom, res:Response, next:NextFunction) => {
-  req.user = {
-    _id: '6492bfca4b2dbc7714a519e2',
-  };
-  next();
-});
+app.post('/signin', validateLogin, login);
+app.post('/signup', validateCreateUser, createUser);
+app.use(auth);
 
 // подключение роутов
 app.use('/users', userRoute);
 app.use('/cards', cardRoute);
+
+// логер ошибок
+app.use(logger.errorLogger);
+
 app.use((req: RequestCustom, res: Response, next: NextFunction) => {
   next(new NotFoundError('Страницы не существует'));
 });
+app.use(errors);
 // подключение обработчика ошибок
 app.use(errorHandler);
 
