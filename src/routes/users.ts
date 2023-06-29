@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import {
-  createUser, getUsers, getUserById, updateProfile, updateAva,
+  getUsers, getUserById, updateProfile, updateAva, getMe,
 } from '../controllers/users';
+import { validateGetUserById, validateUpdateProfile, validateUpdateAva } from '../middlewares/validation';
 
 const router = Router();
-router.post('/', createUser);
 router.get('/', getUsers);
-router.get('/:userId', getUserById);
-router.patch('/me', updateProfile);
-router.patch('/me/avatar', updateAva);
+router.get('/me', getMe);
+router.get('/:userId', validateGetUserById, getUserById);
+router.patch('/me', validateUpdateProfile, updateProfile);
+router.patch('/me/avatar', validateUpdateAva, updateAva);
 
 export default router;

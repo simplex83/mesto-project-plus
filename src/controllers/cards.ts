@@ -30,12 +30,16 @@ export const getCards = async (req: Request, res: Response, next: NextFunction) 
   }
 };
 
-export const delCardsById = async (req: Request, res: Response, next: NextFunction) => {
+export const delCardsById = async (req: RequestCustom, res: Response, next: NextFunction) => {
   try {
-    const card = await Card.findByIdAndRemove(req.params.cardId);
+    const card = await Card.findById(req.params.cardId);
     if (!card) {
       throw new NotFoundError('Карточка с указанным _id не найдена');
     }
+    if (req.user?._id !== card?.owner.toString()) {
+      throw new BadRequestError('Можно удалять только свои карточки');
+    }
+    await card.deleteOne();
     return res.status(200).json({ data: card });
   } catch (err) {
     if (err instanceof mongoose.Error.CastError) {
