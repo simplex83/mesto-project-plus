@@ -2,7 +2,7 @@
 import mongoose, { Model, Document } from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcrypt';
-import BadRequestError from '../utils/badRequestError';
+import UnauthorizedError from '../utils/badRequestError';
 import { validateLink } from '../middlewares/validation';
 
 export interface IUser {
@@ -59,11 +59,11 @@ const userSchema = new mongoose.Schema<IUser, UserModel>({
 userSchema.static('findUserByCredentials', async function findUserByCredentials(email: string, password: string) {
   const user:IUser|null = await this.findOne({ email }).select('+password');
   if (!user) {
-    throw new BadRequestError('Неправильные почта или пароль');
+    throw new UnauthorizedError('Неправильные почта или пароль');
   }
   const userValid = await bcrypt.compare(password, user.password);
   if (!userValid) {
-    throw new BadRequestError('Неправильные почта или пароль');
+    throw new UnauthorizedError('Неправильные почта или пароль');
   }
   return user;
 });

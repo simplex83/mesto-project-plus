@@ -2,7 +2,6 @@
 import winston from 'winston';
 import expressWinston from 'express-winston';
 import 'winston-daily-rotate-file';
-import WinstonTelegram from 'winston-telegram';
 
 // eslint-disable-next-line no-unused-vars
 const transport = new winston.transports.DailyRotateFile({
@@ -13,11 +12,6 @@ const transport = new winston.transports.DailyRotateFile({
   zippedArchive: true,
 });
 
-const telegramTransport = new WinstonTelegram({
-  token: '6182862556:AAHEo_hNilCAQ7UVUv3B-o7ZHfQEVMhV9yQ',
-  chatId: 197543593,
-});
-
 const requestLogger = expressWinston.logger({
   transports: [
     new winston.transports.Console({
@@ -26,7 +20,6 @@ const requestLogger = expressWinston.logger({
     new winston.transports.File({
       filename: 'request.log',
     }),
-    telegramTransport,
   ],
   format: winston.format.json(),
 });

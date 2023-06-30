@@ -5,11 +5,7 @@ import { SessionCustom } from '../utils/types';
 import UnauthorizedError from '../utils/unauthorizedError';
 
 export default (req: SessionCustom, res: Response, next: NextFunction) => {
-  const { authorization } = req.headers;
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    throw new UnauthorizedError('Необходима авторизация');
-  }
-  const token = authorization.replace('Bearer ', '');
+  const token = req.cookies.JWT;
   let payload;
   try {
     payload = jwt.verify(token, 'some-secret-key');

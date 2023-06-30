@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import { MongoServerError } from 'mongodb';
 import User from '../models/user';
 import { RequestCustom } from '../utils/types';
 import NotFoundError from '../utils/notFoundError ';
@@ -14,19 +15,19 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     name, about, avatar, email, password,
   } = req.body;
   try {
-    const uniqEmail = await User.findOne({ email });
-    if (uniqEmail) {
-      throw new ConflictError('Пользователь с такими данными уже существует');
-    }
-    if (!email || !password) {
-      throw new BadRequestError('Переданы некорректные данные при создании пользователя');
-    }
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await bcrypt.hash(password, 10);
     const user = await User.create({
       name, about, avatar, email, password: hash,
     });
-    return res.status(200).json({ data: user });
+    return res.status(200).json({
+      data: {
+        name: user.name, about: user.about, avatar: user.avatar, email: user.email,
+      },
+    });
   } catch (err) {
+    if (err instanceof MongoServerError && err.code === 11000) {
+      return next(new ConflictError('Пользователь с такими данными уже существует'));
+    }
     if (err instanceof Error && err.name === 'ValidationError') {
       return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
     }
@@ -37,9 +38,6 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
   try {
-    if (!email || !password) {
-      throw new BadRequestError('Почта и пароль обязательны для авторизации');
-    }
     const user = await User.findUserByCredentials(email, password);
     const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
     res.cookie('JWT', token, { httpOnly: true, maxAge: 3600000 * 24 * 7 });
@@ -76,9 +74,6 @@ export const getUserById = async (req: Request, res: Response, next: NextFunctio
 export const updateProfile = async (req: RequestCustom, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
   try {
-    if (!name || !about) {
-      throw new BadRequestError('Переданы некорректные данные при обновлении профиля');
-    }
     const user = await User.findByIdAndUpdate(req.user?._id, {
       name,
       about,
@@ -97,9 +92,6 @@ export const updateProfile = async (req: RequestCustom, res: Response, next: Nex
 export const updateAva = async (req: RequestCustom, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
   try {
-    if (!avatar) {
-      throw new BadRequestError('Переданы некорректные данные при обновлении аватара');
-    }
     const user = await User.findByIdAndUpdate(req.user?._id, {
       avatar,
     }, {

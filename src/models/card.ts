@@ -1,5 +1,6 @@
 import mongoose, { Date, Schema } from 'mongoose';
 import user from './user';
+import { validateLink } from '../middlewares/validation';
 
 interface ICard {
   name: string;
@@ -19,6 +20,10 @@ const cardSchema = new mongoose.Schema<ICard>({
   link: {
     type: String,
     required: true,
+    validate: {
+      validator: validateLink,
+      message: 'Некорректный формат URL',
+    },
   },
   owner: {
     type: Schema.Types.ObjectId,
