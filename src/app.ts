@@ -1,7 +1,8 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import express, { NextFunction, Response } from 'express';
 import mongoose from 'mongoose';
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { errors } from 'celebrate';
+import cookieParser from 'cookie-parser';
 import { RequestCustom } from './utils/types';
 import userRoute from './routes/users';
 import cardRoute from './routes/cards';
@@ -13,10 +14,11 @@ import logger from './middlewares/logger';
 import { validateCreateUser, validateLogin } from './middlewares/validation';
 
 const { PORT = 3000 } = process.env;
-
 const app = express();
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // подключение mongoose
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
@@ -31,13 +33,13 @@ app.use(auth);
 app.use('/users', userRoute);
 app.use('/cards', cardRoute);
 
-// логер ошибок
-app.use(logger.errorLogger);
-
 app.use((req: RequestCustom, res: Response, next: NextFunction) => {
   next(new NotFoundError('Страницы не существует'));
 });
-app.use(errors);
+// логер ошибок
+app.use(logger.errorLogger);
+
+app.use(errors());
 // подключение обработчика ошибок
 app.use(errorHandler);
 

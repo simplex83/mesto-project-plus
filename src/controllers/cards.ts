@@ -4,13 +4,11 @@ import Card from '../models/card';
 import { RequestCustom } from '../utils/types';
 import NotFoundError from '../utils/notFoundError ';
 import BadRequestError from '../utils/badRequestError';
+import ForbiddenError from '../utils/forbiddenError';
 
 export const createCard = async (req: RequestCustom, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
   try {
-    if (!name || !link) {
-      throw new BadRequestError('Переданы некорректные данные при создании карточки');
-    }
     const card = await Card.create({ name, link, owner: req.user?._id });
     return res.status(200).json({ data: card });
   } catch (err) {
@@ -37,7 +35,7 @@ export const delCardsById = async (req: RequestCustom, res: Response, next: Next
       throw new NotFoundError('Карточка с указанным _id не найдена');
     }
     if (req.user?._id !== card?.owner.toString()) {
-      throw new BadRequestError('Можно удалять только свои карточки');
+      throw new ForbiddenError('Можно удалять только свои карточки');
     }
     await card.deleteOne();
     return res.status(200).json({ data: card });
